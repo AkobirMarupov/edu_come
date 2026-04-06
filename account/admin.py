@@ -5,11 +5,11 @@ from django.contrib.auth.hashers import make_password
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
  
-    list_display = ('id', 'phone_number', 'telegram_id', 'role', 'is_staff', 'is_active', 'date_joined')
+    list_display = ('id', 'phone_number', 'role', 'is_staff', 'is_active', 'date_joined')
     list_filter = ('is_staff', 'is_active')
-    search_fields = ('phone_number', 'telegram_id')
+    search_fields = ('phone_number', )
 
-    fields = ('phone_number', 'password', 'telegram_id', 'role', 'is_active', 'is_staff', 'is_superuser')
+    fields = ('phone_number', 'password', 'role', 'is_active', 'is_staff', 'is_superuser')
 
     def save_model(self, request, obj, form, change):
         

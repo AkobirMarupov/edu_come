@@ -188,13 +188,13 @@ SIMPLE_JWT = {
 
 
 JAZZMIN_SETTINGS = {
-    "site_title": "Market Admin",
-    "site_header": "Market",
-    "site_brand": "Market Pro",
+    "site_title": "EDU COME Admin",
+    "site_header": "EDU COME",
+    "site_brand": "EDU COME Pro",
     "site_logo": "apple.jpg",
     "site_logo_classes": "img-circle elevation-3", 
     "welcome_sign": "Xush kelibsiz!",
-    "copyright": "Market Dash � 2026",
+    "copyright": "EDU COME Dash 2026",
     
     "user_avatar": None, 
 
