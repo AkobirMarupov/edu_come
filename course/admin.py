@@ -1,65 +1,68 @@
 from django.contrib import admin
-from .models import Category, SubCategory, Course, Lesson
-
+from .models import (
+    Category, SubCategory, Course, 
+    Lesson, CourseApplication, Enrollment, Review, Wishlist
+)
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'created_at')
+    list_display = ('name', 'created_at')
     search_fields = ('name',)
-    ordering = ('-created_at',)
-
 
 @admin.register(SubCategory)
 class SubCategoryAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'category', 'parent', 'created_at')
+    list_display = ('name', 'category', 'parent', 'created_at')
     list_filter = ('category',)
     search_fields = ('name',)
-    ordering = ('-created_at',)
-    autocomplete_fields = ('category', 'parent')
-
 
 class LessonInline(admin.TabularInline):
     model = Lesson
     extra = 1
-    fields = ['title', 'description', 'video_url', 'video_file', 'duration_display']
-
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    # 'owner'ni ham ro'yxatda ko'rsatamiz
-    list_display = ['title', 'price', 'sub_category', 'owner']
-    search_fields = ['title', 'sub_category']
-    list_filter = ['sub_category']
-    exclude = ['owner',]
-    
+    list_display = ('title', 'owner', 'category', 'price', 'created_at')
+    list_filter = ('category', 'owner')
+    search_fields = ('title', 'description')
     inlines = [LessonInline]
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        return qs.filter(owner=request.user)
-
-    def save_model(self, request, obj, form, change):
-        if not change: # Yangi yaratilayotgan bo'lsa
-            obj.owner = request.user
-        super().save_model(request, obj, form, change)
-
 
 @admin.register(Lesson)
 class LessonAdmin(admin.ModelAdmin):
-    list_display = ['title', 'course', 'duration_display']
-    list_filter = ['course']
-    search_fields = ['title']
+    list_display = ('title', 'course', 'duration_display', 'is_preview')
+    list_filter = ('course', 'is_preview')
+    search_fields = ('title', 'description')
 
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        return qs.filter(course__owner=request.user)
+@admin.register(CourseApplication)
+class CourseApplicationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'status', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('user__phone_number', 'course__title')
+    actions = ['approve_applications', 'reject_applications']
 
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "course" and not request.user.is_superuser:
-            kwargs["queryset"] = Course.objects.filter(owner=request.user)
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+    @admin.action(description="Tanlangan arizalarni tasdiqlash")
+    def approve_applications(self, request, queryset):
+        for app in queryset:
+            app.status = 'approved'
+            app.save()
+            Enrollment.objects.get_or_create(user=app.user, course=app.course)
+        self.message_user(request, "Arizalar tasdiqlandi va talabalar kursga qo'shildi.")
+
+    @admin.action(description="Tanlangan arizalarni rad etish")
+    def reject_applications(self, request, queryset):
+        queryset.update(status='rejected')
+
+@admin.register(Enrollment)
+class EnrollmentAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'created_at')
+    list_filter = ('course',)
+    search_fields = ('user__phone_number', 'course__title')
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    list_display = ('course', 'user', 'rating', 'created_at')
+    list_filter = ('rating', 'course')
+
+@admin.register(Wishlist)
+class WishlistAdmin(admin.ModelAdmin):
+    list_display = ('user', 'course', 'created_at')
