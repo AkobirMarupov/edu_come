@@ -41,6 +41,7 @@ LOCAL_APPS = [
     'account',
     'common',
     'course',
+    'admin_page'
 ]
 
 EXTERNAL_APPS = [
