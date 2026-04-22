@@ -22,7 +22,7 @@ class LessonInline(admin.TabularInline):
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'owner', 'category', 'price', 'created_at')
+    list_display = ('title', 'owner', 'category', 'price', 'created_at', 'image')
     list_filter = ('category', 'owner')
     search_fields = ('title', 'description')
     inlines = [LessonInline]

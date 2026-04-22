@@ -27,7 +27,6 @@ class UserAdmin(admin.ModelAdmin):
     readonly_fields = ('date_joined', 'last_login')
 
     def save_model(self, request, obj, form, change):
-        """Parolni xavfsiz saqlash (hash qilish) mantiqi"""
         if obj.password and not obj.password.startswith(('pbkdf2_sha256$', 'bcrypt$', 'argon2')):
             obj.password = make_password(obj.password)
         super().save_model(request, obj, form, change)
