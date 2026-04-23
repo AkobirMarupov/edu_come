@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny
+from account.permissions import IsAdminUserRole, IsTeacherUserRole
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
@@ -10,30 +11,35 @@ from course.api_endpoints.lesson.serializers import CourseSerializer, LessonSeri
 from course.models import Course, Lesson
 
 
+
 class CourseListAPIView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
-
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
-    @swagger_auto_schema(responses={200: CourseSerializer(many=True)}, tags=['course'])
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(tags=['course'], operation_summary="Barcha kurslar ro'yxati (Hamma uchun)")
     def get(self, request):
         courses = Course.objects.all().order_by('-id')
         serializer = CourseSerializer(courses, many=True, context={'request': request})
         return Response(serializer.data)
 
+
+class MyCourseListAPIView(APIView):
+    permission_classes = [IsAdminUserRole | IsTeacherUserRole]
+    
+    @swagger_auto_schema(responses={200: CourseSerializer(many=True)}, tags=['course'])
+    def get(self, request):
+        courses = Course.objects.filter(owner=request.user).order_by('-id')
+        serializer = CourseSerializer(courses, many=True, context={'request': request})
+        return Response(serializer.data)
+
     @swagger_auto_schema(request_body=CourseSerializer, tags=['course'])
     def post(self, request):
-        """Kurs yaratish (Faqat login qilganlar uchun)"""
         serializer = CourseSerializer(data=request.data, context={'request': request})
         if serializer.is_valid(raise_exception=True):
             serializer.save(owner=request.user) # Kurs egasini biriktirish
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class CourseDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUserRole, IsTeacherUserRole]
     parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(responses={200: CourseSerializer()}, tags=['course'])
@@ -41,6 +47,7 @@ class CourseDetailAPIView(APIView):
         course = get_object_or_404(Course, owner=request.user, pk=pk)
         serializer = CourseSerializer(course, context={'request': request})
         return Response(serializer.data)
+
 
     @swagger_auto_schema(request_body=CourseSerializer, tags=['course'])
     def put(self, request, pk):
@@ -50,6 +57,7 @@ class CourseDetailAPIView(APIView):
             serializer.save()
             return Response(serializer.data)
 
+
     @swagger_auto_schema(tags=['course'])
     def delete(self, request, pk):
         course = get_object_or_404(Course, owner=request.user, pk=pk)
@@ -58,16 +66,21 @@ class CourseDetailAPIView(APIView):
 
 
 class LessonListAPIView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [AllowAny]
 
-    def get_permissions(self):
-        if self.request.method == 'GET':
-            return [AllowAny()]
-        return [IsAuthenticated()]
-
-    @swagger_auto_schema(responses={200: LessonSerializer(many=True)}, tags=['lesson'])
+    @swagger_auto_schema(tags=['lesson'], operation_summary="Barcha darslar ro'yxati (Hamma uchun)")
     def get(self, request):
         lessons = Lesson.objects.all().order_by('-id')
+        serializer = LessonSerializer(lessons, many=True, context={'request': request})
+        return Response(serializer.data)
+
+class MyLessonListAPIView(APIView):
+    permission_classes = [IsAdminUserRole | IsTeacherUserRole]
+    
+    @swagger_auto_schema(tags=['lesson'], operation_summary="Faqat o'ziga tegishli darslar")
+    def get(self, request):
+        # Lesson -> Course -> Owner zanjiri orqali filtrlaymiz
+        lessons = Lesson.objects.filter(course__owner=request.user).order_by('-id')
         serializer = LessonSerializer(lessons, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -80,7 +93,7 @@ class LessonListAPIView(APIView):
 
 
 class LessonDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUserRole, IsTeacherUserRole]
     parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(responses={200: LessonSerializer()}, tags=['lesson'])

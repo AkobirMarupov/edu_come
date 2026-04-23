@@ -11,7 +11,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'category',
             'sub_category',
             'price',
-            'image_url',
+            'image',
             'owner'
         ]
         read_only_fields = ['id', 'owner']

@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from account.permissions import IsAdminUserRole
+from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
@@ -9,13 +10,24 @@ from drf_yasg.utils import swagger_auto_schema
 from course.api_endpoints.category.serializers import CategorySerializer, SubCategorySerializer
 from course.models import Category, SubCategory
 
-class CategoryListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
 
-    @swagger_auto_schema(responses={200: CategorySerializer(many=True)}, tags=['category'])
+
+class CategoryListAPIView(APIView):
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(tags=['category'], operation_summary="Barcha kategoriyalar ro'yxati")
     def get(self, request):
         categories = Category.objects.all().order_by('-id')
+        serializer = CategorySerializer(categories, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class MyCategoryAPIView(APIView):
+    permission_classes = [IsAdminUserRole]
+    
+    @swagger_auto_schema(tags=['category'], operation_summary="Adminning o'zi yaratgan kategoriyalar")
+    def get(self, request):
+        categories = Category.objects.filter(course__owner=request.user).distinct().order_by('-id')
         serializer = CategorySerializer(categories, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -27,7 +39,7 @@ class CategoryListAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class CategoryDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUserRole]
     parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(responses={200: CategorySerializer()}, tags=['category'])
@@ -52,12 +64,22 @@ class CategoryDetailAPIView(APIView):
     
 
 class SubCategoryListAPIView(APIView):
-    permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
-
-    @swagger_auto_schema(responses={200: SubCategorySerializer(many=True)}, tags=['subcategory'])
+    permission_classes = [AllowAny]
+    
+    @swagger_auto_schema(tags=['subcategory'], operation_summary="Barcha subkategoriyalar ro'yxati (Public)")
     def get(self, request):
         subcategories = SubCategory.objects.all().order_by('-id')
+        serializer = SubCategorySerializer(subcategories, many=True, context={'request': request})
+        return Response(serializer.data)
+
+
+class MySubCategoryListAPIView(APIView):
+    permission_classes = [IsAdminUserRole]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @swagger_auto_schema(tags=['subcategory'], operation_summary="Adminning o'z subkategoriyalari")
+    def get(self, request):
+        subcategories = SubCategory.objects.filter(category__course__owner=request.user).order_by('-id')
         serializer = SubCategorySerializer(subcategories, many=True, context={'request': request})
         return Response(serializer.data)
 
@@ -69,7 +91,7 @@ class SubCategoryListAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 class SubCategoryDetailAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUserRole]
     parser_classes = [MultiPartParser, FormParser]
 
     @swagger_auto_schema(responses={200: SubCategorySerializer()}, tags=['subcategory'])
