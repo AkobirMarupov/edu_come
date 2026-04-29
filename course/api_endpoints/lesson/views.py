@@ -79,7 +79,6 @@ class MyLessonListAPIView(APIView):
     
     @swagger_auto_schema(tags=['lesson'], operation_summary="Faqat o'ziga tegishli darslar")
     def get(self, request):
-        # Lesson -> Course -> Owner zanjiri orqali filtrlaymiz
         lessons = Lesson.objects.filter(course__owner=request.user).order_by('-id')
         serializer = LessonSerializer(lessons, many=True, context={'request': request})
         return Response(serializer.data)

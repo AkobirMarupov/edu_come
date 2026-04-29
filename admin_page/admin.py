@@ -11,7 +11,6 @@ class NotificationAdmin(admin.ModelAdmin):
 
 @admin.register(HeroBanner)
 class HeroBannerAdmin(admin.ModelAdmin):
-    # Asosiy ro'yxatda nimalar chiqsin
     list_display = ('title', 'is_active', 'courses_count_text', 'students_count_text', 'created_at')
     list_editable = ('is_active',)
     list_filter = ('is_active', 'created_at')
